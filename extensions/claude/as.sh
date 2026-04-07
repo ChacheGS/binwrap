@@ -14,6 +14,7 @@ shift
 
 if [[ $# -eq 0 || "$1" == --* ]]; then
     WRAPPER_ERROR="--as requires two arguments: <persona> <task>"
+    unset _as_persona
     return
 fi
 
