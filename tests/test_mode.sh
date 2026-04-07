@@ -14,13 +14,13 @@ TEST_EXTENSIONS_HOME=$(mktemp -d)
 mkdir -p "$TEST_EXTENSIONS_HOME/modes"
 echo "You are a helpful assistant in test mode." > "$TEST_EXTENSIONS_HOME/modes/test-mode.md"
 
-# Test: --mode valid-name → --append-system-prompt <absolute-path>
+# Test: --mode valid-name → --append-system-prompt <file content>
 > "$FAKE_CLAUDE_LOG"
 CLAUDE_EXTENSIONS_HOME="$TEST_EXTENSIONS_HOME" "$WRAPPER" --mode test-mode 2>/dev/null
 received=$(cat "$FAKE_CLAUDE_LOG")
-expected_path="$TEST_EXTENSIONS_HOME/modes/test-mode.md"
-assert_equals "--mode: translates to --append-system-prompt with full path" \
-    "--append-system-prompt $expected_path" "$received"
+expected_content="You are a helpful assistant in test mode."
+assert_equals "--mode: translates to --append-system-prompt with file content" \
+    "--append-system-prompt $expected_content" "$received"
 
 # Test: --mode valid-name alongside other flags
 > "$FAKE_CLAUDE_LOG"
