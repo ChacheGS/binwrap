@@ -1,8 +1,8 @@
 # extensions/claude/undercover.sh
-# Alias: --undercover loads modes/undercover.md as system prompt (no argument consumed).
+# Alias: --undercover loads mode/undercover.md as system prompt (no argument consumed).
 # BINWRAP_HOME and BINWRAP_BINARY are set by the dispatcher.
 
-_mode_file="${BINWRAP_HOME}/${BINWRAP_BINARY}/modes/undercover.md"
+_mode_file="${BINWRAP_HOME}/${BINWRAP_BINARY}/mode/undercover.md"
 
 if [[ ! -f "$_mode_file" ]]; then
     WRAPPER_ERROR="mode 'undercover' not found at ${_mode_file}"

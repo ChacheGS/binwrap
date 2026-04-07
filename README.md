@@ -54,7 +54,7 @@ Handlers are looked up at `$BINWRAP_HOME/<binary>/<flag>.sh`. Data files (e.g. m
 
 ### `--mode <name>`
 
-Loads `$BINWRAP_HOME/claude/modes/<name>.md` as a system prompt.
+Loads `$BINWRAP_HOME/claude/mode/<name>.md` as a system prompt.
 
 ```bash
 claude --mode undercover
@@ -62,7 +62,7 @@ claude --mode undercover
 
 ### `--undercover`
 
-Alias: loads `$BINWRAP_HOME/claude/modes/undercover.md` as a system prompt. No argument consumed.
+Alias: loads `$BINWRAP_HOME/claude/mode/undercover.md` as a system prompt. No argument consumed.
 
 ```bash
 claude --undercover

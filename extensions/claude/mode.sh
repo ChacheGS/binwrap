@@ -12,7 +12,7 @@ fi
 _mode_name="$1"
 shift
 
-_mode_file="${BINWRAP_HOME}/${BINWRAP_BINARY}/modes/${_mode_name}.md"
+_mode_file="${BINWRAP_HOME}/${BINWRAP_BINARY}/mode/${_mode_name}.md"
 
 if [[ ! -f "$_mode_file" ]]; then
     WRAPPER_ERROR="mode '${_mode_name}' not found at ${_mode_file}"
