@@ -1,49 +1,100 @@
-# claude-wrapper
+# binwrap
 
-A bash wrapper for the `claude` CLI that adds custom flags and translates them into real `claude` arguments.
+A binary-agnostic CLI wrapper that intercepts custom flags and translates them into real arguments before delegating to the target binary.
+
+## How it works
+
+```bash
+binwrap <binary> [args...]
+```
+
+`binwrap` reads its first argument as the target binary, then processes remaining args. For any `--flag` it finds a matching `$BINWRAP_HOME/<binary>/<flag>.sh` handler, it sources it; otherwise the flag is forwarded unchanged.
 
 ## Setup
 
-1. Clone this repo somewhere permanent, e.g. `~/.local/share/claude-wrapper`
-2. Add an alias to your `~/.zshrc` or `~/.bashrc`:
+1. Clone this repo somewhere permanent:
 
    ```bash
-   alias claude='/path/to/claude-wrapper/claude'
+   git clone <repo> ~/.local/share/binwrap
    ```
 
-3. Reload your shell: `source ~/.zshrc`
+2. Add aliases to your `~/.zshrc` or `~/.bashrc`:
+
+   ```bash
+   alias claude='~/.local/share/binwrap/binwrap claude'
+   ```
+
+3. Install extensions:
+
+   ```bash
+   bash ~/.local/share/binwrap/install.sh
+   ```
+
+4. Reload your shell: `source ~/.zshrc`
 
 ## Configuration
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `CLAUDE_EXTENSIONS_HOME` | `~/.config/claude/extensions` | Root directory for all extension assets |
+| `BINWRAP_HOME` | `~/.config/binwrap` | Root for all installed handlers and data |
 
-## Custom flags
+Handlers are looked up at `$BINWRAP_HOME/<binary>/<flag>.sh`. Data files (e.g. mode prompts) live alongside handlers under `$BINWRAP_HOME/<binary>/`.
+
+## Shipped extensions (claude)
 
 ### `--mode <name>`
 
-Loads a system prompt from `$CLAUDE_EXTENSIONS_HOME/modes/<name>.md` and passes it to `claude` as `--append-system-prompt`.
+Loads `$BINWRAP_HOME/claude/modes/<name>.md` as a system prompt.
 
 ```bash
-# Create a mode file
-mkdir -p ~/.config/claude/extensions/modes
-echo "You are a concise code reviewer." > ~/.config/claude/extensions/modes/reviewer.md
-
-# Use it
 claude --mode reviewer
 ```
 
-## Adding new custom flags
+### `--reviewer`
 
-1. Create `handlers/<flag-name>.sh`
+Alias: loads `$BINWRAP_HOME/claude/modes/reviewer.md` as a system prompt. No argument consumed.
+
+```bash
+claude --reviewer
+```
+
+### `--as <persona> <task>`
+
+Builds a system prompt from two arguments.
+
+```bash
+claude --as "a senior engineer" "review this code for security issues"
+# → --append-system-prompt "You are a senior engineer. Your task: review this code for security issues"
+```
+
+### `--using <file1> [file2] ...`
+
+Reads one or more files and concatenates their content into a system prompt. Consumes arguments until the next `--flag`.
+
+```bash
+claude --using context.md notes.md --model sonnet
+```
+
+## Adding your own extensions
+
+1. Create `$BINWRAP_HOME/<binary>/<flag>.sh`
 2. Implement the handler contract:
-   - Read the flag's value from `$1` and call `shift` to consume it
-   - On success: append translated args to `CLAUDE_ARGS`
+   - `BINWRAP_HOME` and `BINWRAP_BINARY` are available from the dispatcher
+   - Consume positional args by reading `$1` and calling `shift`
+   - On success: append translated args to `WRAPPED_BIN_ARGS`
    - On failure: set `WRAPPER_ERROR="<message>"` and `return`
-3. Add tests in `tests/test_<flag-name>.sh`
+   - Never call `exit` directly from a handler
+3. Add tests in `tests/test_<flag>.sh`
 
-No changes to the dispatcher needed.
+### Handler patterns
+
+**No-arg (alias):** don't shift, just append to `WRAPPED_BIN_ARGS`.
+
+**Single-arg:** read `$1`, shift once.
+
+**Fixed N-arg:** read and shift N times, checking each `$1` is not a `--flag`.
+
+**Variadic:** loop while `$# -gt 0 && "$1" != --*`, shifting each iteration.
 
 ## Running tests
 
