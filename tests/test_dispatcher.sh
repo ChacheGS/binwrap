@@ -27,5 +27,21 @@ assert_equals "pass-through: multiple unknown flags forwarded" "--model sonnet -
 received=$(cat "$FAKE_CLAUDE_LOG")
 assert_equals "pass-through: no args" "" "$received"
 
+# Test: WRAPPER_ERROR causes exit 1, prints message to stderr, claude not called
+TEMP_HANDLER_DIR=$(mktemp -d)
+echo 'WRAPPER_ERROR="deliberate test error"' > "$TEMP_HANDLER_DIR/failing.sh"
+
+> "$FAKE_CLAUDE_LOG"
+output=$(WRAPPER_HANDLER_DIR="$TEMP_HANDLER_DIR" "$WRAPPER" --failing 2>&1)
+exit_code=$?
+claude_called=$(cat "$FAKE_CLAUDE_LOG")
+
+assert_exit_code "error: exits 1 when WRAPPER_ERROR set" "1" "$exit_code"
+assert_contains "error: prints wrapper prefix to stderr" "claude-wrapper:" "$output"
+assert_contains "error: message body in stderr" "deliberate test error" "$output"
+assert_equals "error: claude not called" "" "$claude_called"
+
+rm -rf "$TEMP_HANDLER_DIR"
+
 teardown_fake_claude
 print_summary "Dispatcher tests"
