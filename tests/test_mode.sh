@@ -44,6 +44,13 @@ output=$(CLAUDE_EXTENSIONS_HOME="$TEST_EXTENSIONS_HOME" "$WRAPPER" --mode 2>&1)
 exit_code=$?
 assert_exit_code "--mode no value: exits 1" "1" "$exit_code"
 
+# Test: --mode followed immediately by another flag (no value) → exit 1
+> "$FAKE_CLAUDE_LOG"
+output=$(CLAUDE_EXTENSIONS_HOME="$TEST_EXTENSIONS_HOME" "$WRAPPER" --mode --model 2>&1)
+exit_code=$?
+assert_exit_code "--mode flag-as-value: exits 1" "1" "$exit_code"
+assert_contains "--mode flag-as-value: error mentions requirement" "--mode requires a value" "$output"
+
 rm -rf "$TEST_EXTENSIONS_HOME"
 teardown_fake_claude
 print_summary "Mode handler tests"

@@ -11,6 +11,12 @@ while [[ $# -gt 0 ]]; do
 
     if [[ "$arg" == --* ]]; then
         flag_name="${arg#--}"
+
+        if [[ ! "$flag_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            CLAUDE_ARGS+=("$arg")
+            continue
+        fi
+
         handler="$HANDLER_DIR/${flag_name}.sh"
 
         if [[ -f "$handler" ]]; then
