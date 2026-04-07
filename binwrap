@@ -13,6 +13,11 @@ if [[ ! "$BINWRAP_BINARY" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     exit 1
 fi
 
+if ! command -v "$BINWRAP_BINARY" &>/dev/null; then
+    echo "binwrap: binary '${BINWRAP_BINARY}' not found in PATH" >&2
+    exit 1
+fi
+
 BINWRAP_HOME="${BINWRAP_HOME:-$HOME/.config/binwrap}"
 HANDLER_DIR="${BINWRAP_HOME}/${BINWRAP_BINARY}"
 WRAPPED_BIN_ARGS=()

@@ -2,6 +2,16 @@
 
 A binary-agnostic CLI wrapper that intercepts custom flags and translates them into real arguments before delegating to the target binary.
 
+## Origin
+
+This started with a leak. When Anthropic accidentally published the Claude Code source code, people who dug through it found something interesting: an "undercover mode." A system prompt that instructs the assistant to write git output like a human developer, no traces of AI authorship. It was wired in as an internal-only feature for Anthropic employees.
+
+Since the prompt was out in the open, generalizing it wasn't hard. Tool-specific references came out, writing style guidelines went in. The result is what you see here: a tool-agnostic version you can toggle with a unix flag.
+
+Is it useful? Probably not for most people. Does it add overhead? A fair bit. But it's a clean primitive, usable for all binaries, and the undercover use case is what made it worth building; all tests and extensions are Claude Code-themed for this reason.
+
+For now it's just an argument translator, but the mechanism allows for everything you can code, and can be used to add, rename, ignore arguments and flags, or customize just about anything tools don't natively support.
+
 ## How it works
 
 ```bash
@@ -47,15 +57,15 @@ Handlers are looked up at `$BINWRAP_HOME/<binary>/<flag>.sh`. Data files (e.g. m
 Loads `$BINWRAP_HOME/claude/modes/<name>.md` as a system prompt.
 
 ```bash
-claude --mode reviewer
+claude --mode undercover
 ```
 
-### `--reviewer`
+### `--undercover`
 
-Alias: loads `$BINWRAP_HOME/claude/modes/reviewer.md` as a system prompt. No argument consumed.
+Alias: loads `$BINWRAP_HOME/claude/modes/undercover.md` as a system prompt. No argument consumed.
 
 ```bash
-claude --reviewer
+claude --undercover
 ```
 
 ### `--as <persona> <task>`
