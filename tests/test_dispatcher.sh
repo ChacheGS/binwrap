@@ -2,46 +2,53 @@
 # tests/test_dispatcher.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WRAPPER="$SCRIPT_DIR/../claude"
+WRAPPER="$SCRIPT_DIR/../binwrap"
 source "$SCRIPT_DIR/helpers.sh"
 
 echo "=== Dispatcher tests ==="
 
 setup_fake_claude
 
-# Test: args with no matching handler are forwarded to claude unchanged
+# Test: unknown flags forwarded to the binary unchanged
 > "$FAKE_CLAUDE_LOG"
-"$WRAPPER" --model sonnet 2>/dev/null
+"$WRAPPER" claude --model sonnet 2>/dev/null
 received=$(cat "$FAKE_CLAUDE_LOG")
 assert_equals "pass-through: unknown flag forwarded" "--model sonnet" "$received"
 
 # Test: multiple unknown args all forwarded
 > "$FAKE_CLAUDE_LOG"
-"$WRAPPER" --model sonnet --no-stream 2>/dev/null
+"$WRAPPER" claude --model sonnet --no-stream 2>/dev/null
 received=$(cat "$FAKE_CLAUDE_LOG")
 assert_equals "pass-through: multiple unknown flags forwarded" "--model sonnet --no-stream" "$received"
 
-# Test: no args — claude called with empty args
+# Test: no extra args — binary called with empty args
 > "$FAKE_CLAUDE_LOG"
-"$WRAPPER" 2>/dev/null
+"$WRAPPER" claude 2>/dev/null
 received=$(cat "$FAKE_CLAUDE_LOG")
 assert_equals "pass-through: no args" "" "$received"
 
-# Test: WRAPPER_ERROR causes exit 1, prints message to stderr, claude not called
-TEMP_HANDLER_DIR=$(mktemp -d)
-echo 'WRAPPER_ERROR="deliberate test error"' > "$TEMP_HANDLER_DIR/failing.sh"
+# Test: WRAPPER_ERROR causes exit 1, prints message to stderr, binary not called
+TEMP_BINWRAP_HOME=$(mktemp -d)
+mkdir -p "$TEMP_BINWRAP_HOME/testbin"
+echo 'WRAPPER_ERROR="deliberate test error"' > "$TEMP_BINWRAP_HOME/testbin/failing.sh"
 
 > "$FAKE_CLAUDE_LOG"
-output=$(WRAPPER_HANDLER_DIR="$TEMP_HANDLER_DIR" "$WRAPPER" --failing 2>&1)
+output=$(BINWRAP_HOME="$TEMP_BINWRAP_HOME" "$WRAPPER" testbin --failing 2>&1)
 exit_code=$?
-claude_called=$(cat "$FAKE_CLAUDE_LOG")
+binary_called=$(cat "$FAKE_CLAUDE_LOG")
 
 assert_exit_code "error: exits 1 when WRAPPER_ERROR set" "1" "$exit_code"
-assert_contains "error: prints wrapper prefix to stderr" "claude-wrapper:" "$output"
+assert_contains "error: prints binwrap prefix to stderr" "binwrap:" "$output"
 assert_contains "error: message body in stderr" "deliberate test error" "$output"
-assert_equals "error: claude not called" "" "$claude_called"
+assert_equals "error: binary not called" "" "$binary_called"
 
-rm -rf "$TEMP_HANDLER_DIR"
+rm -rf "$TEMP_BINWRAP_HOME"
+
+# Test: missing binary argument → exit 1
+output=$("$WRAPPER" 2>&1)
+exit_code=$?
+assert_exit_code "no binary arg: exits 1" "1" "$exit_code"
+assert_contains "no binary arg: usage in stderr" "usage" "$output"
 
 teardown_fake_claude
 print_summary "Dispatcher tests"

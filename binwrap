@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+if [[ $# -eq 0 ]]; then
+    echo "binwrap: usage: binwrap <binary> [args...]" >&2
+    exit 1
+fi
+
+BINWRAP_BINARY="$1"
+shift
+
+if [[ ! "$BINWRAP_BINARY" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "binwrap: invalid binary name '${BINWRAP_BINARY}'" >&2
+    exit 1
+fi
+
+BINWRAP_HOME="${BINWRAP_HOME:-$HOME/.config/binwrap}"
+HANDLER_DIR="${BINWRAP_HOME}/${BINWRAP_BINARY}"
+WRAPPED_BIN_ARGS=()
+WRAPPER_ERROR=""
+
+while [[ $# -gt 0 ]]; do
+    arg="$1"
+    shift
+
+    if [[ "$arg" == --* ]]; then
+        flag_name="${arg#--}"
+
+        if [[ ! "$flag_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            WRAPPED_BIN_ARGS+=("$arg")
+            continue
+        fi
+
+        handler="$HANDLER_DIR/${flag_name}.sh"
+
+        if [[ -f "$handler" ]]; then
+            # shellcheck source=/dev/null
+            source "$handler"
+            continue
+        fi
+    fi
+
+    WRAPPED_BIN_ARGS+=("$arg")
+done
+
+if [[ -n "$WRAPPER_ERROR" ]]; then
+    echo "binwrap: $WRAPPER_ERROR" >&2
+    exit 1
+fi
+
+exec command "$BINWRAP_BINARY" "${WRAPPED_BIN_ARGS[@]}"
