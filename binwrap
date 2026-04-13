@@ -63,6 +63,9 @@ while [[ $# -gt 0 ]]; do
         fi
     fi
 
+    if [[ -d "$HANDLER_DIR/$arg" ]]; then
+        HANDLER_DIR="$HANDLER_DIR/$arg"
+    fi
     WRAPPED_BIN_ARGS+=("$arg")
 done
 
