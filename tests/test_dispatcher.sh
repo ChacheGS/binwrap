@@ -44,6 +44,35 @@ assert_equals "error: binary not called" "" "$binary_called"
 
 rm -rf "$TEMP_BINWRAP_HOME"
 
+# Test: handler that calls exit → exit 1, binary not called
+TEMP_BINWRAP_HOME2=$(mktemp -d)
+mkdir -p "$TEMP_BINWRAP_HOME2/testbin"
+echo 'exit 0' > "$TEMP_BINWRAP_HOME2/testbin/exits.sh"
+
+> "$FAKE_CLAUDE_LOG"
+output=$(BINWRAP_HOME="$TEMP_BINWRAP_HOME2" "$WRAPPER" testbin --exits 2>&1)
+exit_code=$?
+binary_called=$(cat "$FAKE_CLAUDE_LOG")
+
+assert_exit_code "sandbox: handler exit → exits 1" "1" "$exit_code"
+assert_contains "sandbox: handler exit → error message" "called exit" "$output"
+assert_equals "sandbox: handler exit → binary not called" "" "$binary_called"
+
+rm -rf "$TEMP_BINWRAP_HOME2"
+
+# Test: side-effects-only handler (no args appended) → binary still called, no error
+TEMP_BINWRAP_HOME3=$(mktemp -d)
+mkdir -p "$TEMP_BINWRAP_HOME3/testbin"
+echo '# no-op handler' > "$TEMP_BINWRAP_HOME3/testbin/sideeffect.sh"
+
+> "$FAKE_CLAUDE_LOG"
+BINWRAP_HOME="$TEMP_BINWRAP_HOME3" "$WRAPPER" testbin --sideeffect --model sonnet 2>/dev/null
+received=$(cat "$FAKE_CLAUDE_LOG")
+
+assert_equals "sandbox: side-effects-only handler → remaining args forwarded" "--model sonnet" "$received"
+
+rm -rf "$TEMP_BINWRAP_HOME3"
+
 # Test: missing binary argument → exit 1
 output=$("$WRAPPER" 2>&1)
 exit_code=$?

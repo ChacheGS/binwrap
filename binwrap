@@ -38,8 +38,27 @@ while [[ $# -gt 0 ]]; do
         handler="$HANDLER_DIR/${flag_name}.sh"
 
         if [[ -f "$handler" ]]; then
-            # shellcheck source=/dev/null
-            source "$handler"
+            _orig_argc=$#
+            _sandbox_result=$(
+                WRAPPED_BIN_ARGS=()
+                WRAPPER_ERROR=""
+                # shellcheck source=/dev/null
+                source "$handler"
+                printf 'WRAPPER_ERROR=%q\n' "$WRAPPER_ERROR"
+                printf '_h_consumed=%d\n' $(( _orig_argc - $# ))
+                printf '_h_new_args=('
+                [[ ${#WRAPPED_BIN_ARGS[@]} -gt 0 ]] && printf '%q ' "${WRAPPED_BIN_ARGS[@]}"
+                printf ')\n'
+            )
+            eval "$_sandbox_result"
+
+            if [[ -z "$_sandbox_result" || -z "${_h_consumed+set}" ]]; then
+                WRAPPER_ERROR="handler '${flag_name}' called exit unexpectedly"
+            elif [[ -z "$WRAPPER_ERROR" ]]; then
+                for (( _i=0; _i<_h_consumed; _i++ )); do shift; done
+                WRAPPED_BIN_ARGS+=("${_h_new_args[@]}")
+            fi
+            unset _orig_argc _sandbox_result _h_consumed _h_new_args _i
             continue
         fi
     fi

@@ -10,11 +10,20 @@ echo "=== Reviewer alias tests ==="
 setup_fake_claude
 
 TEST_BINWRAP_HOME=$(mktemp -d)
-mkdir -p "$TEST_BINWRAP_HOME/claude/modes"
-echo "You are a concise code reviewer." > "$TEST_BINWRAP_HOME/claude/modes/reviewer.md"
-cp "$SCRIPT_DIR/../extensions/claude/reviewer.sh" "$TEST_BINWRAP_HOME/claude/reviewer.sh"
+mkdir -p "$TEST_BINWRAP_HOME/claude/mode"
+echo "You are a concise code reviewer." > "$TEST_BINWRAP_HOME/claude/mode/reviewer.md"
+cat > "$TEST_BINWRAP_HOME/claude/reviewer.sh" << 'HANDLER_EOF'
+_mode_file="${BINWRAP_HOME}/${BINWRAP_BINARY}/mode/reviewer.md"
+if [[ ! -f "$_mode_file" ]]; then
+    WRAPPER_ERROR="mode 'reviewer' not found at ${_mode_file}"
+    unset _mode_file
+    return
+fi
+WRAPPED_BIN_ARGS+=("--append-system-prompt" "$(cat "$_mode_file")")
+unset _mode_file
+HANDLER_EOF
 
-# Test: --reviewer loads modes/reviewer.md as system prompt (no value consumed)
+# Test: --reviewer loads mode/reviewer.md as system prompt (no value consumed)
 > "$FAKE_CLAUDE_LOG"
 BINWRAP_HOME="$TEST_BINWRAP_HOME" "$WRAPPER" claude --reviewer 2>/dev/null
 received=$(cat "$FAKE_CLAUDE_LOG")
@@ -28,8 +37,8 @@ received=$(cat "$FAKE_CLAUDE_LOG")
 assert_contains "--reviewer: other flags still forwarded" "--model sonnet" "$received"
 assert_contains "--reviewer: --append-system-prompt present" "--append-system-prompt" "$received"
 
-# Test: --reviewer with missing modes/reviewer.md → exit 1
-rm "$TEST_BINWRAP_HOME/claude/modes/reviewer.md"
+# Test: --reviewer with missing mode/reviewer.md → exit 1
+rm "$TEST_BINWRAP_HOME/claude/mode/reviewer.md"
 > "$FAKE_CLAUDE_LOG"
 output=$(BINWRAP_HOME="$TEST_BINWRAP_HOME" "$WRAPPER" claude --reviewer 2>&1)
 exit_code=$?

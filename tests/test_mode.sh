@@ -10,8 +10,8 @@ echo "=== Mode handler tests ==="
 setup_fake_claude
 
 TEST_BINWRAP_HOME=$(mktemp -d)
-mkdir -p "$TEST_BINWRAP_HOME/claude/modes"
-echo "You are a helpful assistant in test mode." > "$TEST_BINWRAP_HOME/claude/modes/test-mode.md"
+mkdir -p "$TEST_BINWRAP_HOME/claude/mode"
+echo "You are a helpful assistant in test mode." > "$TEST_BINWRAP_HOME/claude/mode/test-mode.md"
 cp "$SCRIPT_DIR/../extensions/claude/mode.sh" "$TEST_BINWRAP_HOME/claude/mode.sh"
 
 # Test: --mode valid-name → --append-system-prompt <file content>

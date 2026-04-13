@@ -51,6 +51,7 @@ setup_fake_claude() {
 echo "$*" >> "$FAKE_CLAUDE_LOG"
 FAKE_EOF
     chmod +x "$FAKE_CLAUDE_DIR/claude"
+    cp "$FAKE_CLAUDE_DIR/claude" "$FAKE_CLAUDE_DIR/testbin"
     export PATH="$FAKE_CLAUDE_DIR:$PATH"
     export FAKE_CLAUDE_LOG
     export FAKE_CLAUDE_DIR
