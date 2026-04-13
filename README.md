@@ -18,7 +18,9 @@ For now it's just an argument translator, but the mechanism allows for everythin
 binwrap <binary> [args...]
 ```
 
-`binwrap` reads its first argument as the target binary, then processes remaining args. For any `--flag` it finds a matching `$BINWRAP_HOME/<binary>/<flag>.sh` handler, it sources it; otherwise the flag is forwarded unchanged.
+`binwrap` reads its first argument as the target binary, then processes remaining args. For any `--flag` or `--flag=value` it finds a matching `$BINWRAP_HOME/<binary>/<flag>.sh` handler, it sources it; otherwise the flag is forwarded unchanged.
+
+> **Note:** single-dash flags (`-f`, `-v`, etc.) are not intercepted and always forwarded as-is.
 
 ## Setup
 

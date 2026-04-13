@@ -73,6 +73,30 @@ assert_equals "sandbox: side-effects-only handler → remaining args forwarded" 
 
 rm -rf "$TEMP_BINWRAP_HOME3"
 
+# Test: --flag=value passes value as $1 to handler
+TEMP_BINWRAP_HOME4=$(mktemp -d)
+mkdir -p "$TEMP_BINWRAP_HOME4/testbin"
+echo 'WRAPPED_BIN_ARGS+=("--got=$1"); shift' > "$TEMP_BINWRAP_HOME4/testbin/greet.sh"
+
+> "$FAKE_CLAUDE_LOG"
+BINWRAP_HOME="$TEMP_BINWRAP_HOME4" "$WRAPPER" testbin --greet=hello 2>/dev/null
+received=$(cat "$FAKE_CLAUDE_LOG")
+assert_equals "--flag=value: value injected as \$1" "--got=hello" "$received"
+
+# Test: --flag=value does not consume a real arg
+> "$FAKE_CLAUDE_LOG"
+BINWRAP_HOME="$TEMP_BINWRAP_HOME4" "$WRAPPER" testbin --greet=hello world 2>/dev/null
+received=$(cat "$FAKE_CLAUDE_LOG")
+assert_equals "--flag=value: real args not consumed" "--got=hello world" "$received"
+
+# Test: --flag=value with no handler passes through unchanged
+> "$FAKE_CLAUDE_LOG"
+BINWRAP_HOME="$TEMP_BINWRAP_HOME4" "$WRAPPER" testbin --unknown=thing 2>/dev/null
+received=$(cat "$FAKE_CLAUDE_LOG")
+assert_equals "--flag=value: no handler passes through as-is" "--unknown=thing" "$received"
+
+rm -rf "$TEMP_BINWRAP_HOME4"
+
 # Test: missing binary argument → exit 1
 output=$("$WRAPPER" 2>&1)
 exit_code=$?

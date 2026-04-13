@@ -28,20 +28,32 @@ while [[ $# -gt 0 ]]; do
     shift
 
     if [[ "$arg" == --* ]]; then
-        flag_name="${arg#--}"
+        _flag_raw="${arg#--}"
+
+        if [[ "$_flag_raw" == *=* ]]; then
+            flag_name="${_flag_raw%%=*}"
+            _flag_injected="${_flag_raw#*=}"
+        else
+            flag_name="$_flag_raw"
+            _flag_injected=""
+        fi
 
         if [[ ! "$flag_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
             WRAPPED_BIN_ARGS+=("$arg")
+            unset _flag_raw _flag_injected
             continue
         fi
 
         handler="$HANDLER_DIR/${flag_name}.sh"
 
         if [[ -f "$handler" ]]; then
-            _orig_argc=$#
+            _injected=0
+            [[ -n "$_flag_injected" ]] && _injected=1
             _sandbox_result=$(
                 WRAPPED_BIN_ARGS=()
                 WRAPPER_ERROR=""
+                [[ $_injected -eq 1 ]] && set -- "$_flag_injected" "$@"
+                _orig_argc=$#
                 # shellcheck source=/dev/null
                 source "$handler"
                 printf 'WRAPPER_ERROR=%q\n' "$WRAPPER_ERROR"
@@ -55,12 +67,15 @@ while [[ $# -gt 0 ]]; do
             if [[ -z "$_sandbox_result" || -z "${_h_consumed+set}" ]]; then
                 WRAPPER_ERROR="handler '${flag_name}' called exit unexpectedly"
             elif [[ -z "$WRAPPER_ERROR" ]]; then
-                for (( _i=0; _i<_h_consumed; _i++ )); do shift; done
+                _real_consumed=$(( _h_consumed - _injected ))
+                for (( _i=0; _i<_real_consumed; _i++ )); do shift; done
                 WRAPPED_BIN_ARGS+=("${_h_new_args[@]}")
             fi
-            unset _orig_argc _sandbox_result _h_consumed _h_new_args _i
+            unset _flag_raw _flag_injected _injected _real_consumed _sandbox_result _h_consumed _h_new_args _i
             continue
         fi
+
+        unset _flag_raw _flag_injected
     fi
 
     if [[ -d "$HANDLER_DIR/$arg" ]]; then
