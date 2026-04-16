@@ -21,6 +21,7 @@ fi
 BINWRAP_HOME="${BINWRAP_HOME:-$HOME/.config/binwrap}"
 HANDLER_DIR="${BINWRAP_HOME}/${BINWRAP_BINARY}"
 WRAPPED_BIN_ARGS=()
+WRAPPED_BIN_ENV=()
 WRAPPER_ERROR=""
 
 while [[ $# -gt 0 ]]; do
@@ -51,6 +52,7 @@ while [[ $# -gt 0 ]]; do
             [[ -n "$_flag_injected" ]] && _injected=1
             _sandbox_result=$(
                 WRAPPED_BIN_ARGS=()
+                WRAPPED_BIN_ENV=()
                 WRAPPER_ERROR=""
                 [[ $_injected -eq 1 ]] && set -- "$_flag_injected" "$@"
                 _orig_argc=$#
@@ -61,7 +63,11 @@ while [[ $# -gt 0 ]]; do
                 printf '_h_new_args=('
                 [[ ${#WRAPPED_BIN_ARGS[@]} -gt 0 ]] && printf '%q ' "${WRAPPED_BIN_ARGS[@]}"
                 printf ')\n'
+                printf '_h_new_env=('
+                [[ ${#WRAPPED_BIN_ENV[@]} -gt 0 ]] && printf '%q ' "${WRAPPED_BIN_ENV[@]}"
+                printf ')\n'
             )
+            # bring subshell-defined variables to this scope
             eval "$_sandbox_result"
 
             if [[ -z "$_sandbox_result" || -z "${_h_consumed+set}" ]]; then
@@ -70,8 +76,9 @@ while [[ $# -gt 0 ]]; do
                 _real_consumed=$(( _h_consumed - _injected ))
                 for (( _i=0; _i<_real_consumed; _i++ )); do shift; done
                 WRAPPED_BIN_ARGS+=("${_h_new_args[@]}")
+                WRAPPED_BIN_ENV+=("${_h_new_env[@]}")
             fi
-            unset _flag_raw _flag_injected _injected _real_consumed _sandbox_result _h_consumed _h_new_args _i
+            unset _flag_raw _flag_injected _injected _real_consumed _sandbox_result _h_consumed _h_new_args _h_new_env _i
             continue
         fi
 
@@ -89,4 +96,4 @@ if [[ -n "$WRAPPER_ERROR" ]]; then
     exit 1
 fi
 
-exec command "$BINWRAP_BINARY" "${WRAPPED_BIN_ARGS[@]}"
+exec env "${WRAPPED_BIN_ENV[@]}" "$BINWRAP_BINARY" "${WRAPPED_BIN_ARGS[@]}"
