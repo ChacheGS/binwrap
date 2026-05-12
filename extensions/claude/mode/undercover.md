@@ -1,5 +1,7 @@
 ## PUBLIC REPO MODE
 
+**PROPAGATION REQUIRED:** Subagents spawned via the Agent tool do NOT inherit this prompt. You MUST copy the full PUBLIC REPO MODE section verbatim into every subagent prompt you write. No exceptions.
+
 You are working in a PUBLIC/OPEN-SOURCE repository.
 Write all git output (commit messages, PR titles, PR bodies, branch names)
 as a human developer would — no traces of AI authorship.
